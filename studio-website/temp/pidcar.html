@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+    <head>
+        <title>PID Car</title>
+    </head>
+
+    <body>
+        <script>
+            const canvas = document.createElement('canvas');
+            canvas.style.border = '1px solid black';
+            canvas.width = 1000;
+            canvas.height = 500;
+            const context = canvas.getContext('2d');
+            document.body.appendChild(canvas);
+
+            let carPosition = {
+                x: 100,
+                y: canvas.height / 2 + -150 + Math.random() * 300
+            }; //in pixels
+
+            let carAngle = -Math.PI / 2.0 + Math.random() * Math.PI;
+
+            let lastError = carPosition.y - getPath(carPosition.x);
+            let integratedError = 0;
+
+            const Kp = -0.0003;
+            const Kd = -0.0003;
+            const Ki = 0.0;
+
+            const carSpeed = 200;
+
+            function getPath (x) {
+                var t = 2.0 * Math.PI * x / canvas.width;
+                return canvas.height / 2 + (Math.sin(t * 1) * Math.sin(t * 2)) * 20;
+            }
+
+            function animate(dt) {
+                let error = carPosition.y - getPath(carPosition.x);
+
+                const deltaError = (error - lastError) / dt;
+                lastError = error;
+
+                integratedError += error * dt;
+
+                carAngle += error * Kp + deltaError * Kd + integratedError * Ki;
+                
+                carPosition.x += Math.cos(carAngle) * carSpeed * dt;
+                carPosition.y += Math.sin(carAngle) * carSpeed * dt;
+
+                if (carPosition.x > canvas.width + 100) {
+                    carPosition.x = 0;
+                }
+
+                if (carPosition.x < -100) {
+                    carPosition.x = canvas.width;
+                }
+            }
+
+            function render() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                context.strokeStyle = 'black';
+                context.moveTo(0, getPath(0));
+                for (var x = 0; x < canvas.width; x += 5) {
+                    context.lineTo(x, getPath(x));
+                }
+
+                context.stroke();
+
+                context.translate(carPosition.x, carPosition.y);
+                context.rotate(carAngle);
+
+                const carLength = 50;
+                const carWidth = 20;
+
+                context.fillStyle = 'red';
+                context.fillRect(-carLength / 2, -carWidth / 2, carLength, carWidth);
+
+                context.rotate(-carAngle);
+                context.translate(-carPosition.x, -carPosition.y);
+
+            }
+
+            let frameCount = 0;
+            let lastTime = 0;
+            function update(time) {
+                if (time !== undefined) {
+                    const dt = (time - lastTime) / 1000;
+                    lastTime = time;
+
+                    animate(dt);
+                } else {
+                    animate(1.0 / 60.0);
+                }
+
+                render();
+
+                frameCount += 1;
+
+                requestAnimationFrame(update);
+            }
+            update();
+        </script>
+    </body>
+</html>
